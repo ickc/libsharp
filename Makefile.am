@@ -3,16 +3,16 @@ ACLOCAL_AMFLAGS = -I m4
 lib_LTLIBRARIES = libsharp2.la
 
 libsharp2_la_SOURCES = \
-  libsharp2/pocketfft.c \
+  libsharp2/pocketfft.cc \
   libsharp2/pocketfft.h \
-  libsharp2/sharp_utils.c \
+  libsharp2/sharp_utils.cc \
   libsharp2/sharp_utils.h \
-  libsharp2/sharp.c \
-  libsharp2/sharp_almhelpers.c \
-  libsharp2/sharp_core.c \
-  libsharp2/sharp_geomhelpers.c \
-  libsharp2/sharp_legendre_roots.c \
-  libsharp2/sharp_ylmgen_c.c \
+  libsharp2/sharp.cc \
+  libsharp2/sharp_almhelpers.cc \
+  libsharp2/sharp_core.cc \
+  libsharp2/sharp_geomhelpers.cc \
+  libsharp2/sharp_legendre_roots.cc \
+  libsharp2/sharp_ylmgen_c.cc \
   libsharp2/sharp_internal.h \
   libsharp2/sharp_legendre_roots.h \
   libsharp2/sharp_vecsupport.h \
@@ -26,23 +26,23 @@ libsharp2_la_SOURCES = \
 # ==> age <= current
 libsharp2_la_LDFLAGS = -version-info 0:0:0
 
-AM_CFLAGS = @AM_CFLAGS@
+AM_CXXFLAGS = @AM_CXXFLAGS@
 
 if HAVE_MULTIARCH
 
-libavx_la_SOURCES = libsharp2/sharp_core_inc.c
-libavx2_la_SOURCES = libsharp2/sharp_core_inc.c
-libfma_la_SOURCES = libsharp2/sharp_core_inc.c
-libfma4_la_SOURCES = libsharp2/sharp_core_inc.c
-libavx512f_la_SOURCES = libsharp2/sharp_core_inc.c
+libavx_la_SOURCES = libsharp2/sharp_core_inc.cc
+libavx2_la_SOURCES = libsharp2/sharp_core_inc.cc
+libfma_la_SOURCES = libsharp2/sharp_core_inc.cc
+libfma4_la_SOURCES = libsharp2/sharp_core_inc.cc
+libavx512f_la_SOURCES = libsharp2/sharp_core_inc.cc
 
 noinst_LTLIBRARIES = libavx.la libavx2.la libfma.la libfma4.la libavx512f.la
 
-libavx_la_CFLAGS = ${AM_CFLAGS} -mavx -DARCH=avx
-libavx2_la_CFLAGS = ${AM_CFLAGS} -mavx2 -DARCH=avx2
-libfma_la_CFLAGS = ${AM_CFLAGS} -mfma -DARCH=fma
-libfma4_la_CFLAGS = ${AM_CFLAGS} -mfma4 -DARCH=fma4
-libavx512f_la_CFLAGS = ${AM_CFLAGS} -mavx512f -DARCH=avx512f
+libavx_la_CXXFLAGS = ${AM_CXXFLAGS} -mavx -DARCH=avx
+libavx2_la_CXXFLAGS = ${AM_CXXFLAGS} -mavx2 -DARCH=avx2
+libfma_la_CXXFLAGS = ${AM_CXXFLAGS} -mfma -DARCH=fma
+libfma4_la_CXXFLAGS = ${AM_CXXFLAGS} -mfma4 -DARCH=fma4
+libavx512f_la_CXXFLAGS = ${AM_CXXFLAGS} -mavx512f -DARCH=avx512f
 
 libsharp2_la_LIBADD = libavx.la libavx2.la libfma.la libfma4.la libavx512f.la
 
@@ -56,10 +56,10 @@ nobase_include_HEADERS = \
   libsharp2/sharp_cxx.h
 
 EXTRA_DIST = \
-  runtest.sh fortran/sharp.f90 fortran/test_sharp.f90 libsharp2/sharp_mpi.c
+  runtest.sh fortran/sharp.f90 fortran/test_sharp.f90 libsharp2/sharp_mpi.cc
 
 check_PROGRAMS = sharp2_testsuite
-sharp2_testsuite_SOURCES = test/sharp2_testsuite.c test/memusage.c test/memusage.h
+sharp2_testsuite_SOURCES = test/sharp2_testsuite.cc test/memusage.cc test/memusage.h
 sharp2_testsuite_LDADD = libsharp2.la
 
 TESTS = runtest.sh

@@ -49,7 +49,7 @@ It can be disabled at configuration time by specifying "--disable-openmp" at the
 configure command line.
 At runtime OMP_NUM_THREADS should be set to the number of hardware threads
 (not physical cores) of the system.
-(Usually this is  already the default setting when OMP_NUM_THREADS is not
+(Usually this is already the default setting when OMP_NUM_THREADS is not
 specified.)
 
 

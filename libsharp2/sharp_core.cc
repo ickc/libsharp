@@ -27,7 +27,7 @@
 
 #define ARCH default
 #define GENERIC_ARCH
-#include "libsharp2/sharp_core_inc.c"
+#include "libsharp2/sharp_core_inc.cc"
 #undef GENERIC_ARCH
 #undef ARCH
 

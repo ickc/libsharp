@@ -34,7 +34,7 @@
 #define XCONCATX2(a,b) XCONCATX(a,b)
 #define XARCH(a) XCONCATX2(a,ARCH)
 
-#include <complex.h>
+#include <complex>
 #include <math.h>
 #include <string.h>
 #include "libsharp2/sharp_vecsupport.h"
@@ -49,7 +49,9 @@
 // Unfortunately, most compilers don't act on this pragma yet.
 #pragma STDC FP_CONTRACT ON
 
-typedef complex double dcmplx;
+typedef complex<double> dcmplx;
+inline double creal(const dcmplx &v) {return v.real(); }
+inline double cimag(const dcmplx &v) {return v.imag(); }
 
 #define nv0 (128/VLEN)
 #define nvx (64/VLEN)
@@ -224,10 +226,10 @@ NOINLINE static void alm2map_kernel(s0data_v * restrict d,
     {
     for (; l<=lmax-2; il+=2, l+=4)
       {
-      Tv ar1=vload(creal(alm[l  ])), ai1=vload(cimag(alm[l  ]));
-      Tv ar2=vload(creal(alm[l+1])), ai2=vload(cimag(alm[l+1]));
-      Tv ar3=vload(creal(alm[l+2])), ai3=vload(cimag(alm[l+2]));
-      Tv ar4=vload(creal(alm[l+3])), ai4=vload(cimag(alm[l+3]));
+      Tv ar1=vload(alm[l  ].real()), ai1=vload(alm[l  ].imag());
+      Tv ar2=vload(alm[l+1].real()), ai2=vload(alm[l+1].imag());
+      Tv ar3=vload(alm[l+2].real()), ai3=vload(alm[l+2].imag());
+      Tv ar4=vload(alm[l+3].real()), ai4=vload(alm[l+3].imag());
       Tv a1=vload(coef[il  ].a), b1=vload(coef[il  ].b);
       Tv a2=vload(coef[il+1].a), b2=vload(coef[il+1].b);
       for (int i=0; i<nv0; ++i)
@@ -963,8 +965,8 @@ NOINLINE static void inner_loop_a2m(sharp_job *job, const int *ispair,
               d.s.p2r[i]*=cth_[tgt];
               d.s.p2i[i]*=cth_[tgt];
               int phas_idx = tgt*job->s_th + mi*job->s_m;
-              complex double r1 = d.s.p1r[i] + d.s.p1i[i]*_Complex_I,
-                             r2 = d.s.p2r[i] + d.s.p2i[i]*_Complex_I;
+              complex<double> r1(d.s.p1r[i], d.s.p1i[i]),
+                              r2(d.s.p2r[i], d.s.p2i[i]);
               job->phase[phas_idx] = r1+r2;
               if (ispair[tgt])
                 job->phase[phas_idx+1] = r1-r2;
@@ -1027,10 +1029,10 @@ NOINLINE static void inner_loop_a2m(sharp_job *job, const int *ispair,
               {
               int tgt=itgt[i];
               int phas_idx = tgt*job->s_th + mi*job->s_m;
-              complex double q1 = d.s.p1pr[i] + d.s.p1pi[i]*_Complex_I,
-                             q2 = d.s.p2pr[i] + d.s.p2pi[i]*_Complex_I,
-                             u1 = d.s.p1mr[i] + d.s.p1mi[i]*_Complex_I,
-                             u2 = d.s.p2mr[i] + d.s.p2mi[i]*_Complex_I;
+              complex<double> q1(d.s.p1pr[i], d.s.p1pi[i]),
+                              q2(d.s.p2pr[i], d.s.p2pi[i]),
+                              u1(d.s.p1mr[i], d.s.p1mi[i]),
+                              u2(d.s.p2mr[i], d.s.p2mi[i]);
               job->phase[phas_idx  ] = q1+q2;
               job->phase[phas_idx+2] = u1+u2;
               if (ispair[tgt])

@@ -28,7 +28,9 @@
 #ifndef SHARP2_VECSUPPORT_H
 #define SHARP2_VECSUPPORT_H
 
-#include <math.h>
+#include <cmath>
+#include <complex>
+using std::complex;
 
 #ifndef VLEN
 
@@ -73,8 +75,8 @@ static inline Tv vmax (Tv a, Tv b) { return (a>b) ? a : b; }
 #define vallTrue(a) (a)
 
 static inline void vhsum_cmplx_special (Tv a, Tv b, Tv c, Tv d,
-  _Complex double * restrict cc)
-  { cc[0] += a+_Complex_I*b; cc[1] += c+_Complex_I*d; }
+  complex<double> * restrict cc)
+  { cc[0] += complex<double>(a,b); cc[1] += complex<double>(c,d); }
 
 
 #endif
@@ -121,9 +123,9 @@ static inline Tv vblend__(Tv m, Tv a, Tv b)
 #define vallTrue(a) (_mm_movemask_pd(a)==3)
 
 static inline void vhsum_cmplx_special (Tv a, Tv b, Tv c,
-  Tv d, _Complex double * restrict cc)
+  Tv d, complex<double> * restrict cc)
   {
-  union {Tv v; _Complex double c; } u1, u2;
+  union {Tv v; complex<double> c; } u1, u2;
 #if defined(__SSE3__)
   u1.v = _mm_hadd_pd(a,b); u2.v=_mm_hadd_pd(c,d);
 #else
@@ -167,13 +169,13 @@ typedef __m256d Tm;
 #define vallTrue(a) (_mm256_movemask_pd(a)==15)
 
 static inline void vhsum_cmplx_special (Tv a, Tv b, Tv c, Tv d,
-  _Complex double * restrict cc)
+  complex<double> * restrict cc)
   {
   Tv tmp1=_mm256_hadd_pd(a,b), tmp2=_mm256_hadd_pd(c,d);
   Tv tmp3=_mm256_permute2f128_pd(tmp1,tmp2,49),
      tmp4=_mm256_permute2f128_pd(tmp1,tmp2,32);
   tmp1=tmp3+tmp4;
-  union {Tv v; _Complex double c[2]; } u;
+  union {Tv v; complex<double> c[2]; } u;
   u.v=tmp1;
   cc[0]+=u.c[0]; cc[1]+=u.c[1];
   }
@@ -209,7 +211,7 @@ typedef __mmask8 Tm;
 #define vallTrue(a) (a==255)
 
 static inline void vhsum_cmplx_special (Tv a, Tv b, Tv c, Tv d,
-  _Complex double * restrict cc)
+  complex<double> * restrict cc)
   {
   cc[0] += _mm512_reduce_add_pd(a)+_Complex_I*_mm512_reduce_add_pd(b);
   cc[1] += _mm512_reduce_add_pd(c)+_Complex_I*_mm512_reduce_add_pd(d);

@@ -34,8 +34,8 @@
 #include "libsharp2/sharp_almhelpers.h"
 #include "libsharp2/sharp_geomhelpers.h"
 
-typedef complex double dcmplx;
-typedef complex float  fcmplx;
+typedef complex<double> dcmplx;
+typedef complex<float>  fcmplx;
 
 static const double sqrt_one_half = 0.707106781186547572737310929369;
 static const double sqrt_two = 1.414213562373095145474621858739;
@@ -105,7 +105,7 @@ NOINLINE static void ringhelper_update (ringhelper *self, int nph, int mmax, dou
       self->phi0_ = phi0;
 // FIXME: improve this by using sincos2pibyn(nph) etc.
       for (int m=0; m<=mmax; ++m)
-        self->shiftarr[m] = cos(m*phi0) + _Complex_I*sin(m*phi0);
+        self->shiftarr[m] = dcmplx(cos(m*phi0),sin(m*phi0));
 //      double *tmp=(double *) self->shiftarr;
 //      sincos_multi (mmax+1, phi0, &tmp[1], &tmp[0], 2);
       }
@@ -120,12 +120,12 @@ NOINLINE static void ringhelper_update (ringhelper *self, int nph, int mmax, dou
 
 static int ringinfo_compare (const void *xa, const void *xb)
   {
-  const sharp_ringinfo *a=xa, *b=xb;
+  const sharp_ringinfo *a=(const sharp_ringinfo *)xa, *b=(const sharp_ringinfo *)xb;
   return (a->sth < b->sth) ? -1 : (a->sth > b->sth) ? 1 : 0;
   }
 static int ringpair_compare (const void *xa, const void *xb)
   {
-  const sharp_ringpair *a=xa, *b=xb;
+  const sharp_ringpair *a=(const sharp_ringpair *)xa, *b=(const sharp_ringpair *)xb;
 //  return (a->r1.sth < b->r1.sth) ? -1 : (a->r1.sth > b->r1.sth) ? 1 : 0;
   if (a->r1.nph==b->r1.nph)
     return (a->r1.phi0 < b->r1.phi0) ? -1 :
@@ -292,22 +292,22 @@ NOINLINE static void ringhelper_phase2ring (ringhelper *self,
     if (self->norot)
       for (int m=0; m<=mmax; ++m)
         {
-        data[2*m]=creal(phase[m*pstride])*wgt;
-        data[2*m+1]=cimag(phase[m*pstride])*wgt;
+        data[2*m]=phase[m*pstride].real()*wgt;
+        data[2*m+1]=phase[m*pstride].imag()*wgt;
         }
     else
       for (int m=0; m<=mmax; ++m)
         {
         dcmplx tmp = phase[m*pstride]*self->shiftarr[m];
-        data[2*m]=creal(tmp)*wgt;
-        data[2*m+1]=cimag(tmp)*wgt;
+        data[2*m]=tmp.real()*wgt;
+        data[2*m+1]=tmp.imag()*wgt;
         }
     for (int m=2*(mmax+1); m<nph+2; ++m)
       data[m]=0.;
     }
   else
     {
-    data[0]=creal(phase[0])*wgt;
+    data[0]=phase[0].real()*wgt;
     SET_ARRAY(data,1,nph+2,0.);
 
     int idx1=1, idx2=nph-1;
@@ -317,13 +317,13 @@ NOINLINE static void ringhelper_phase2ring (ringhelper *self,
       if(!self->norot) tmp*=self->shiftarr[m];
       if (idx1<(nph+2)/2)
         {
-        data[2*idx1]+=creal(tmp);
-        data[2*idx1+1]+=cimag(tmp);
+        data[2*idx1]+=tmp.real();
+        data[2*idx1+1]+=tmp.imag();
         }
       if (idx2<(nph+2)/2)
         {
-        data[2*idx2]+=creal(tmp);
-        data[2*idx2+1]-=cimag(tmp);
+        data[2*idx2]+=tmp.real();
+        data[2*idx2+1]-=tmp.imag();
         }
       if (++idx1>=nph) idx1=0;
       if (--idx2<0) idx2=nph-1;
@@ -357,11 +357,11 @@ NOINLINE static void ringhelper_ring2phase (ringhelper *self,
     {
     if (self->norot)
       for (int m=0; m<=maxidx; ++m)
-        phase[m*pstride] = (data[2*m] + _Complex_I*data[2*m+1]) * wgt;
+        phase[m*pstride] = dcmplx(data[2*m], data[2*m+1]) * wgt;
     else
       for (int m=0; m<=maxidx; ++m)
         phase[m*pstride] =
-          (data[2*m] + _Complex_I*data[2*m+1]) * self->shiftarr[m] * wgt;
+          dcmplx(data[2*m], data[2*m+1]) * self->shiftarr[m] * wgt;
     }
   else
     {
@@ -370,9 +370,9 @@ NOINLINE static void ringhelper_ring2phase (ringhelper *self,
       int idx=m%nph;
       dcmplx val;
       if (idx<(nph-idx))
-        val = (data[2*idx] + _Complex_I*data[2*idx+1]) * wgt;
+        val = dcmplx(data[2*idx], data[2*idx+1]) * wgt;
       else
-        val = (data[2*(nph-idx)] - _Complex_I*data[2*(nph-idx)+1]) * wgt;
+        val = dcmplx(data[2*(nph-idx)], -data[2*(nph-idx)+1]) * wgt;
       if (!self->norot)
         val *= self->shiftarr[m];
       phase[m*pstride]=val;
@@ -577,7 +577,7 @@ NOINLINE static void alm2almtmp (sharp_job *job, int lmax, int mi)
         if (job->flags&SHARP_DP)
           COPY_LOOP(double, dcmplx, x*job->norm_l[l])
         else
-          COPY_LOOP(float, fcmplx, x*job->norm_l[l])
+          COPY_LOOP(float, fcmplx, x*float(job->norm_l[l]))
         }
       }
     }
@@ -617,9 +617,9 @@ NOINLINE static void almtmp2alm (sharp_job *job, int lmax, int mi)
     if (m==0)
       {
       if (job->flags&SHARP_DP)
-        COPY_LOOP(double, double, creal(x)*norm_m0)
+        COPY_LOOP(double, double, x.real()*norm_m0)
       else
-        COPY_LOOP(float, float, crealf(x)*norm_m0)
+        COPY_LOOP(float, float, x.real()*norm_m0)
       }
     else
       {
@@ -634,9 +634,9 @@ NOINLINE static void almtmp2alm (sharp_job *job, int lmax, int mi)
     if (m==0)
       {
       if (job->flags&SHARP_DP)
-        COPY_LOOP(double, double, creal(x)*job->norm_l[l]*norm_m0)
+        COPY_LOOP(double, double, x.real()*job->norm_l[l]*norm_m0)
       else
-        COPY_LOOP(float, fcmplx, (float)(creal(x)*job->norm_l[l]*norm_m0))
+        COPY_LOOP(float, fcmplx, (float)(x.real()*job->norm_l[l]*norm_m0))
       }
     else
       {
@@ -721,7 +721,7 @@ static void ring2phase_direct (sharp_job *job, sharp_ringinfo *ri, int mmax,
       for (int m=0; m<=mmax; ++m)
         phase[2*i+job->s_m*m]= (job->flags & SHARP_DP) ?
           ((dcmplx *)(job->map[i]))[ri->ofs+m*ri->stride]*wgt :
-          ((fcmplx *)(job->map[i]))[ri->ofs+m*ri->stride]*wgt;
+          ((fcmplx *)(job->map[i]))[ri->ofs+m*ri->stride]*float(wgt);
     }
   }
 static void phase2ring_direct (sharp_job *job, sharp_ringinfo *ri, int mmax,
@@ -934,8 +934,8 @@ static void sharp_build_job_common (sharp_job *job, sharp_jobtype type,
     job->flags|=SHARP_REAL_HARMONICS;
   job->time = 0.;
   job->opcnt = 0;
-  job->alm=alm;
-  job->map=map;
+  job->alm=(void **)alm;
+  job->map=(void **)map;
   }
 
 void sharp_execute (sharp_jobtype type, int spin, void *alm, void *map,

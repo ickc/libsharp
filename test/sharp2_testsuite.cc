@@ -26,7 +26,8 @@
 
 #include <stdio.h>
 #include <string.h>
-#include <complex.h>
+#include <complex>
+using std::complex;
 #ifdef USE_MPI
 #include "mpi.h"
 #include "libsharp2/sharp_mpi.h"
@@ -38,7 +39,7 @@
 #include "libsharp2/sharp_geomhelpers.h"
 #include "libsharp2/sharp_almhelpers.h"
 #include "libsharp2/sharp_utils.h"
-#include "libsharp2/sharp_utils.c"
+#include "libsharp2/sharp_utils.cc"
 #include "test/memusage.h"
 
 static void OpenMP_status(void)
@@ -94,7 +95,7 @@ static void sharp_module_startup (const char *name, int argc, int argc_expected,
   exit(1);
   }
 
-typedef complex double dcmplx;
+typedef complex<double> dcmplx;
 
 int ntasks, mytask;
 
@@ -122,7 +123,7 @@ static void random_alm (dcmplx *alm, sharp_alm_info *helper, int spin, int cnt)
         {
         double rv = drand(-1,1,&state);
         double iv = (m==0) ? 0 : drand(-1,1,&state);
-        alm[sharp_alm_index(helper,l,mi)] = rv+_Complex_I*iv;
+        alm[sharp_alm_index(helper,l,mi)] = dcmplx(rv,iv);
         }
       }
     }
@@ -230,8 +231,7 @@ static double *get_sqsum_and_invert (dcmplx **alm, ptrdiff_t nalms, int ncomp)
     sqsum[i]=0;
     for (ptrdiff_t j=0; j<nalms; ++j)
       {
-      sqsum[i]+=creal(alm[i][j])*creal(alm[i][j])
-               +cimag(alm[i][j])*cimag(alm[i][j]);
+      sqsum[i]+=norm(alm[i][j]);
       alm[i][j]=-alm[i][j];
       }
     }
@@ -253,8 +253,7 @@ static void get_errors (dcmplx **alm, ptrdiff_t nalms, int ncomp, double *sqsum,
     double sum=0, maxdiff=0, sumtot, sqsumtot, maxdifftot;
     for (ptrdiff_t j=0; j<nalms; ++j)
       {
-      double sqr=creal(alm[i][j])*creal(alm[i][j])
-                +cimag(alm[i][j])*cimag(alm[i][j]);
+      double sqr=norm(alm[i][j]);
       sum+=sqr;
       if (sqr>maxdiff) maxdiff=sqr;
       }
@@ -414,7 +413,7 @@ static void check_sign_scale(void)
   ALLOC2D(alm,dcmplx,2,nalms);
   for (int i=0; i<2; ++i)
     for (int j=0; j<nalms; ++j)
-      alm[i][j]=1.+_Complex_I;
+      alm[i][j]=dcmplx(1.,1.);
 
   sharp_execute(SHARP_ALM2MAP,0,&alm[0],&map[0],tinfo,alms,SHARP_DP,
     NULL,NULL);

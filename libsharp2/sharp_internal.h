@@ -28,13 +28,11 @@
 #ifndef SHARP2_INTERNAL_H
 #define SHARP2_INTERNAL_H
 
-#ifdef __cplusplus
-#error This header file cannot be included from C++, only from C
-#endif
-
-#include <complex.h>
+#include <complex>
 #include "libsharp2/sharp.h"
 #include "libsharp2/sharp_ylmgen_c.h"
+
+using std::complex;
 
 typedef struct
   {
@@ -45,9 +43,9 @@ typedef struct
   void **map;
   void **alm;
   int s_m, s_th; // strides in m and theta direction
-  complex double *phase;
+  complex<double> *phase;
   double *norm_l;
-  complex double *almtmp;
+  complex<double> *almtmp;
   const sharp_geom_info *ginfo;
   const sharp_alm_info *ainfo;
   double time;
