@@ -36,10 +36,10 @@ using std::complex;
 #include <experimental/simd>
 using std::experimental::native_simd;
 using std::experimental::reduce;
-static constexpr size_t VLEN=native_simd<double>::size();
 using Tv=native_simd<double>;
 using Tm=Tv::mask_type;
-typedef double Ts;
+using Ts=Tv::value_type;
+static constexpr size_t VLEN=Tv::size();
 
 #define vload(a) (a)
 #define vzero 0.

@@ -33,6 +33,7 @@
 #include "libsharp2/sharp_utils.h"
 #include "libsharp2/sharp_almhelpers.h"
 #include "libsharp2/sharp_geomhelpers.h"
+#include "mr_util/threading.h"
 
 typedef complex<double> dcmplx;
 typedef complex<float>  fcmplx;
@@ -760,31 +761,31 @@ NOINLINE static void map2phase (sharp_job *job, int mmax, int llim, int ulim)
     }
   else
     {
-#pragma omp parallel
-{
-    ringhelper helper;
-    ringhelper_init(&helper);
-    int rstride=job->ginfo->nphmax+2;
-    double *ringtmp=RALLOC(double,job->nmaps*rstride);
-#pragma omp for schedule(dynamic,1)
-    for (int ith=llim; ith<ulim; ++ith)
+    mr::execDynamic(ulim-llim, 0, 1, [&](mr::Scheduler &sched)
       {
-      int dim2 = job->s_th*(ith-llim);
-      ring2ringtmp(job,&(job->ginfo->pair[ith].r1),ringtmp,rstride);
-      for (int i=0; i<job->nmaps; ++i)
-        ringhelper_ring2phase (&helper,&(job->ginfo->pair[ith].r1),
-          &ringtmp[i*rstride],mmax,&job->phase[dim2+2*i],pstride,job->flags);
-      if (job->ginfo->pair[ith].r2.nph>0)
+      ringhelper helper;
+      ringhelper_init(&helper);
+      int rstride=job->ginfo->nphmax+2;
+      double *ringtmp=RALLOC(double,job->nmaps*rstride);
+
+      while (auto rng=sched.getNext()) for(auto ith=rng.lo+llim; ith<rng.hi+llim; ++ith)
         {
-        ring2ringtmp(job,&(job->ginfo->pair[ith].r2),ringtmp,rstride);
+        int dim2 = job->s_th*(ith-llim);
+        ring2ringtmp(job,&(job->ginfo->pair[ith].r1),ringtmp,rstride);
         for (int i=0; i<job->nmaps; ++i)
-          ringhelper_ring2phase (&helper,&(job->ginfo->pair[ith].r2),
-           &ringtmp[i*rstride],mmax,&job->phase[dim2+2*i+1],pstride,job->flags);
+          ringhelper_ring2phase (&helper,&(job->ginfo->pair[ith].r1),
+            &ringtmp[i*rstride],mmax,&job->phase[dim2+2*i],pstride,job->flags);
+        if (job->ginfo->pair[ith].r2.nph>0)
+          {
+          ring2ringtmp(job,&(job->ginfo->pair[ith].r2),ringtmp,rstride);
+          for (int i=0; i<job->nmaps; ++i)
+            ringhelper_ring2phase (&helper,&(job->ginfo->pair[ith].r2),
+             &ringtmp[i*rstride],mmax,&job->phase[dim2+2*i+1],pstride,job->flags);
+          }
         }
-      }
-    DEALLOC(ringtmp);
-    ringhelper_destroy(&helper);
-} /* end of parallel region */
+      DEALLOC(ringtmp);
+      ringhelper_destroy(&helper);
+      }); /* end of parallel region */
     }
   }
 
@@ -805,31 +806,31 @@ NOINLINE static void phase2map (sharp_job *job, int mmax, int llim, int ulim)
     }
   else
     {
-#pragma omp parallel
-{
-    ringhelper helper;
-    ringhelper_init(&helper);
-    int rstride=job->ginfo->nphmax+2;
-    double *ringtmp=RALLOC(double,job->nmaps*rstride);
-#pragma omp for schedule(dynamic,1)
-    for (int ith=llim; ith<ulim; ++ith)
+    mr::execDynamic(ulim-llim, 0, 1, [&](mr::Scheduler &sched)
       {
-      int dim2 = job->s_th*(ith-llim);
-      for (int i=0; i<job->nmaps; ++i)
-        ringhelper_phase2ring (&helper,&(job->ginfo->pair[ith].r1),
-          &ringtmp[i*rstride],mmax,&job->phase[dim2+2*i],pstride,job->flags);
-      ringtmp2ring(job,&(job->ginfo->pair[ith].r1),ringtmp,rstride);
-      if (job->ginfo->pair[ith].r2.nph>0)
+      ringhelper helper;
+      ringhelper_init(&helper);
+      int rstride=job->ginfo->nphmax+2;
+      double *ringtmp=RALLOC(double,job->nmaps*rstride);
+
+      while (auto rng=sched.getNext()) for(auto ith=rng.lo+llim; ith<rng.hi+llim; ++ith)
         {
+        int dim2 = job->s_th*(ith-llim);
         for (int i=0; i<job->nmaps; ++i)
-          ringhelper_phase2ring (&helper,&(job->ginfo->pair[ith].r2),
-            &ringtmp[i*rstride],mmax,&job->phase[dim2+2*i+1],pstride,job->flags);
-        ringtmp2ring(job,&(job->ginfo->pair[ith].r2),ringtmp,rstride);
+          ringhelper_phase2ring (&helper,&(job->ginfo->pair[ith].r1),
+            &ringtmp[i*rstride],mmax,&job->phase[dim2+2*i],pstride,job->flags);
+        ringtmp2ring(job,&(job->ginfo->pair[ith].r1),ringtmp,rstride);
+        if (job->ginfo->pair[ith].r2.nph>0)
+          {
+          for (int i=0; i<job->nmaps; ++i)
+            ringhelper_phase2ring (&helper,&(job->ginfo->pair[ith].r2),
+              &ringtmp[i*rstride],mmax,&job->phase[dim2+2*i+1],pstride,job->flags);
+          ringtmp2ring(job,&(job->ginfo->pair[ith].r2),ringtmp,rstride);
+          }
         }
-      }
-    DEALLOC(ringtmp);
-    ringhelper_destroy(&helper);
-} /* end of parallel region */
+      DEALLOC(ringtmp);
+      ringhelper_destroy(&helper);
+      }); /* end of parallel region */
     }
   }
 
@@ -871,32 +872,32 @@ NOINLINE static void sharp_execute_job (sharp_job *job)
 /* map->phase where necessary */
     map2phase (job, mmax, llim, ulim);
 
-#pragma omp parallel
-{
-    sharp_job ljob = *job;
-    ljob.opcnt=0;
-    sharp_Ylmgen_C generator;
-    sharp_Ylmgen_init (&generator,lmax,mmax,ljob.spin);
-    alloc_almtmp(&ljob,lmax);
-
-#pragma omp for schedule(dynamic,1)
-    for (int mi=0; mi<job->ainfo->nm; ++mi)
+    mr::execDynamic(job->ainfo->nm, 0, 1, [&](mr::Scheduler &sched)
       {
-/* alm->alm_tmp where necessary */
-      alm2almtmp (&ljob, lmax, mi);
+      sharp_job ljob = *job;
+      ljob.opcnt=0;
+      sharp_Ylmgen_C generator;
+      sharp_Ylmgen_init (&generator,lmax,mmax,ljob.spin);
+      alloc_almtmp(&ljob,lmax);
 
-      inner_loop (&ljob, ispair, cth, sth, llim, ulim, &generator, mi, mlim);
+      while (auto rng=sched.getNext()) for(auto mi=rng.lo; mi<rng.hi; ++mi)
+        {
+/* alm->alm_tmp where necessary */
+        alm2almtmp (&ljob, lmax, mi);
+
+        inner_loop (&ljob, ispair, cth, sth, llim, ulim, &generator, mi, mlim);
 
 /* alm_tmp->alm where necessary */
-      almtmp2alm (&ljob, lmax, mi);
-      }
+        almtmp2alm (&ljob, lmax, mi);
+        }
 
-    sharp_Ylmgen_destroy(&generator);
-    dealloc_almtmp(&ljob);
+      sharp_Ylmgen_destroy(&generator);
+      dealloc_almtmp(&ljob);
 
-#pragma omp critical
+//#pragma omp critical
+//FIXME!!!!
     job->opcnt+=ljob.opcnt;
-} /* end of parallel region */
+      }); /* end of parallel region */
 
 /* phase->map where necessary */
     phase2map (job, mmax, llim, ulim);

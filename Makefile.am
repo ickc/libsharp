@@ -24,7 +24,7 @@ libsharp2_la_SOURCES = \
 # any backward-compatible change: increase age
 # any backward-incompatible change: age=0
 # ==> age <= current
-libsharp2_la_LDFLAGS = -version-info 0:0:0
+libsharp2_la_LDFLAGS = -version-info 0:0:0 -lpthread
 
 AM_CXXFLAGS = @AM_CXXFLAGS@
 
