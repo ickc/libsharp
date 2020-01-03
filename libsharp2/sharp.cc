@@ -34,6 +34,7 @@
 #include "libsharp2/sharp_almhelpers.h"
 #include "libsharp2/sharp_geomhelpers.h"
 #include "mr_util/threading.h"
+#include "mr_util/useful_macros.h"
 
 typedef complex<double> dcmplx;
 typedef complex<float>  fcmplx;
@@ -58,7 +59,7 @@ static void get_chunk_info (int ndata, int nmult, int *nchunks, int *chunksize)
   *nchunks = (ndata+(*chunksize)-1)/(*chunksize);
   }
 
-NOINLINE int sharp_get_mlim (int lmax, int spin, double sth, double cth)
+MRUTIL_NOINLINE int sharp_get_mlim (int lmax, int spin, double sth, double cth)
   {
   double ofs=lmax*0.01;
   if (ofs<100.) ofs=100.;
@@ -95,7 +96,7 @@ static void ringhelper_destroy (ringhelper *self)
   ringhelper_init(self);
   }
 
-NOINLINE static void ringhelper_update (ringhelper *self, int nph, int mmax, double phi0)
+MRUTIL_NOINLINE static void ringhelper_update (ringhelper *self, int nph, int mmax, double phi0)
   {
   self->norot = (fabs(phi0)<1e-14);
   if (!(self->norot))
@@ -276,7 +277,7 @@ static int sharp_get_mmax (int *mval, int nm)
   return nm-1;
   }
 
-NOINLINE static void ringhelper_phase2ring (ringhelper *self,
+MRUTIL_NOINLINE static void ringhelper_phase2ring (ringhelper *self,
   const sharp_ringinfo *info, double *data, int mmax, const dcmplx *phase,
   int pstride, int flags)
   {
@@ -334,7 +335,7 @@ NOINLINE static void ringhelper_phase2ring (ringhelper *self,
   pocketfft_backward_r (self->plan, &(data[1]), 1.);
   }
 
-NOINLINE static void ringhelper_ring2phase (ringhelper *self,
+MRUTIL_NOINLINE static void ringhelper_ring2phase (ringhelper *self,
   const sharp_ringinfo *info, double *data, int mmax, dcmplx *phase,
   int pstride, int flags)
   {
@@ -384,7 +385,7 @@ NOINLINE static void ringhelper_ring2phase (ringhelper *self,
     phase[m*pstride]=0.;
   }
 
-NOINLINE static void clear_map (const sharp_geom_info *ginfo, void *map,
+MRUTIL_NOINLINE static void clear_map (const sharp_geom_info *ginfo, void *map,
   int flags)
   {
   if (flags & SHARP_NO_FFT)
@@ -441,7 +442,7 @@ NOINLINE static void clear_map (const sharp_geom_info *ginfo, void *map,
     }
   }
 
-NOINLINE static void clear_alm (const sharp_alm_info *ainfo, void *alm,
+MRUTIL_NOINLINE static void clear_alm (const sharp_alm_info *ainfo, void *alm,
   int flags)
   {
 #define CLEARLOOP(real_t,body)             \
@@ -478,7 +479,7 @@ NOINLINE static void clear_alm (const sharp_alm_info *ainfo, void *alm,
     }
   }
 
-NOINLINE static void init_output (sharp_job *job)
+MRUTIL_NOINLINE static void init_output (sharp_job *job)
   {
   if (job->flags&SHARP_ADD) return;
   if (job->type == SHARP_MAP2ALM)
@@ -489,7 +490,7 @@ NOINLINE static void init_output (sharp_job *job)
       clear_map (job->ginfo,job->map[i],job->flags);
   }
 
-NOINLINE static void alloc_phase (sharp_job *job, int nm, int ntheta)
+MRUTIL_NOINLINE static void alloc_phase (sharp_job *job, int nm, int ntheta)
   {
   if (job->type==SHARP_MAP2ALM)
     {
@@ -515,7 +516,7 @@ static void alloc_almtmp (sharp_job *job, int lmax)
 static void dealloc_almtmp (sharp_job *job)
   { DEALLOC(job->almtmp); }
 
-NOINLINE static void alm2almtmp (sharp_job *job, int lmax, int mi)
+MRUTIL_NOINLINE static void alm2almtmp (sharp_job *job, int lmax, int mi)
   {
 
 #define COPY_LOOP(real_t, source_t, expr_of_x)              \
@@ -589,7 +590,7 @@ NOINLINE static void alm2almtmp (sharp_job *job, int lmax, int mi)
 #undef COPY_LOOP
   }
 
-NOINLINE static void almtmp2alm (sharp_job *job, int lmax, int mi)
+MRUTIL_NOINLINE static void almtmp2alm (sharp_job *job, int lmax, int mi)
   {
 
 #define COPY_LOOP(real_t, target_t, expr_of_x)               \
@@ -651,7 +652,7 @@ NOINLINE static void almtmp2alm (sharp_job *job, int lmax, int mi)
 #undef COPY_LOOP
   }
 
-NOINLINE static void ringtmp2ring (sharp_job *job, sharp_ringinfo *ri,
+MRUTIL_NOINLINE static void ringtmp2ring (sharp_job *job, sharp_ringinfo *ri,
   const double *ringtmp, int rstride)
   {
   if (job->flags & SHARP_DP)
@@ -659,8 +660,8 @@ NOINLINE static void ringtmp2ring (sharp_job *job, sharp_ringinfo *ri,
     double **dmap = (double **)job->map;
     for (int i=0; i<job->nmaps; ++i)
       {
-      double *restrict p1=&dmap[i][ri->ofs];
-      const double *restrict p2=&ringtmp[i*rstride+1];
+      double *MRUTIL_RESTRICT p1=&dmap[i][ri->ofs];
+      const double *MRUTIL_RESTRICT p2=&ringtmp[i*rstride+1];
       if (ri->stride==1)
         {
         if (job->flags&SHARP_ADD)
@@ -683,14 +684,14 @@ NOINLINE static void ringtmp2ring (sharp_job *job, sharp_ringinfo *ri,
     }
   }
 
-NOINLINE static void ring2ringtmp (sharp_job *job, sharp_ringinfo *ri,
+MRUTIL_NOINLINE static void ring2ringtmp (sharp_job *job, sharp_ringinfo *ri,
   double *ringtmp, int rstride)
   {
   if (job->flags & SHARP_DP)
     for (int i=0; i<job->nmaps; ++i)
       {
-      double *restrict p1=&ringtmp[i*rstride+1],
-             *restrict p2=&(((double *)(job->map[i]))[ri->ofs]);
+      double *MRUTIL_RESTRICT p1=&ringtmp[i*rstride+1],
+             *MRUTIL_RESTRICT p2=&(((double *)(job->map[i]))[ri->ofs]);
       if (ri->stride==1)
         memcpy(p1,p2,ri->nph*sizeof(double));
       else
@@ -744,7 +745,7 @@ static void phase2ring_direct (sharp_job *job, sharp_ringinfo *ri, int mmax,
   }
 
 //FIXME: set phase to zero if not SHARP_MAP2ALM?
-NOINLINE static void map2phase (sharp_job *job, int mmax, int llim, int ulim)
+MRUTIL_NOINLINE static void map2phase (sharp_job *job, int mmax, int llim, int ulim)
   {
   if (job->type != SHARP_MAP2ALM) return;
   int pstride = job->s_m;
@@ -789,7 +790,7 @@ NOINLINE static void map2phase (sharp_job *job, int mmax, int llim, int ulim)
     }
   }
 
-NOINLINE static void phase2map (sharp_job *job, int mmax, int llim, int ulim)
+MRUTIL_NOINLINE static void phase2map (sharp_job *job, int mmax, int llim, int ulim)
   {
   if (job->type == SHARP_MAP2ALM) return;
   int pstride = job->s_m;
@@ -834,7 +835,7 @@ NOINLINE static void phase2map (sharp_job *job, int mmax, int llim, int ulim)
     }
   }
 
-NOINLINE static void sharp_execute_job (sharp_job *job)
+MRUTIL_NOINLINE static void sharp_execute_job (sharp_job *job)
   {
   double timer=sharp_wallTime();
   job->opcnt=0;

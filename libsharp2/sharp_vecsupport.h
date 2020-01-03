@@ -31,11 +31,12 @@
 #include <cmath>
 #include <complex>
 using std::complex;
-
-
 #include <experimental/simd>
 using std::experimental::native_simd;
 using std::experimental::reduce;
+
+#include "mr_util/useful_macros.h"
+
 using Tv=native_simd<double>;
 using Tm=Tv::mask_type;
 using Ts=Tv::value_type;
@@ -44,7 +45,7 @@ static constexpr size_t VLEN=Tv::size();
 #define vload(a) (a)
 
 static inline void vhsum_cmplx_special (Tv a, Tv b, Tv c, Tv d,
-  complex<double> * restrict cc)
+  complex<double> * MRUTIL_RESTRICT cc)
   {
   cc[0] += complex<double>(reduce(a,std::plus<>()),reduce(b,std::plus<>()));
   cc[1] += complex<double>(reduce(c,std::plus<>()),reduce(d,std::plus<>()));
