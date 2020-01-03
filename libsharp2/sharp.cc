@@ -853,6 +853,7 @@ NOINLINE static void sharp_execute_job (sharp_job *job)
                  &nchunks,&chunksize);
 //FIXME: needs to be changed to "nm"
   alloc_phase (job,mmax+1,chunksize);
+  std::atomic<size_t> opcnt = 0;
 
 /* chunk loop */
   for (int chunk=0; chunk<nchunks; ++chunk)
@@ -894,9 +895,7 @@ NOINLINE static void sharp_execute_job (sharp_job *job)
       sharp_Ylmgen_destroy(&generator);
       dealloc_almtmp(&ljob);
 
-//#pragma omp critical
-//FIXME!!!!
-    job->opcnt+=ljob.opcnt;
+      opcnt+=ljob.opcnt;
       }); /* end of parallel region */
 
 /* phase->map where necessary */
@@ -910,6 +909,7 @@ NOINLINE static void sharp_execute_job (sharp_job *job)
 
   DEALLOC(job->norm_l);
   dealloc_phase (job);
+  job->opcnt = opcnt;
   job->time=sharp_wallTime()-timer;
   }
 

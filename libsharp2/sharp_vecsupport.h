@@ -42,25 +42,6 @@ using Ts=Tv::value_type;
 static constexpr size_t VLEN=Tv::size();
 
 #define vload(a) (a)
-#define vzero 0.
-#define vone 1.
-
-#define vaddeq_mask(mask,a,b) where(mask,a)+=b;
-#define vsubeq_mask(mask,a,b) where(mask,a)-=b;
-#define vmuleq_mask(mask,a,b) where(mask,a)*=b;
-#define vneg(a) (-(a))
-#define vabs(a) abs(a)
-#define vsqrt(a) sqrt(a)
-#define vlt(a,b) ((a)<(b))
-#define vgt(a,b) ((a)>(b))
-#define vge(a,b) ((a)>=(b))
-#define vne(a,b) ((a)!=(b))
-#define vand_mask(a,b) ((a)&&(b))
-#define vor_mask(a,b) ((a)||(b))
-static inline Tv vmin (Tv a, Tv b) { return min(a,b); }
-static inline Tv vmax (Tv a, Tv b) { return max(a,b); }
-#define vanyTrue(a) (any_of(a))
-#define vallTrue(a) (all_of(a))
 
 static inline void vhsum_cmplx_special (Tv a, Tv b, Tv c, Tv d,
   complex<double> * restrict cc)
