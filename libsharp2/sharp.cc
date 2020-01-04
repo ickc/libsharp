@@ -25,9 +25,10 @@
  *  \author Martin Reinecke \author Dag Sverre Seljebotn
  */
 
-#include <math.h>
-#include <string.h>
-#include "libsharp2/pocketfft.h"
+#include <cmath>
+#include <cstring>
+#include <atomic>
+#include "mr_util/fft.h"
 #include "libsharp2/sharp_ylmgen_c.h"
 #include "libsharp2/sharp_internal.h"
 #include "libsharp2/sharp_utils.h"
@@ -78,7 +79,7 @@ typedef struct
   double phi0_;
   dcmplx *shiftarr;
   int s_shift;
-  pocketfft_plan_r plan;
+  mr::detail_fft::rfftp<double> *plan;
   int length;
   int norot;
   } ringhelper;
@@ -91,7 +92,7 @@ static void ringhelper_init (ringhelper *self)
 
 static void ringhelper_destroy (ringhelper *self)
   {
-  if (self->plan) pocketfft_delete_plan_r(self->plan);
+  delete self->plan;
   DEALLOC(self->shiftarr);
   ringhelper_init(self);
   }
@@ -114,8 +115,8 @@ MRUTIL_NOINLINE static void ringhelper_update (ringhelper *self, int nph, int mm
 //  if (!self->plan) self->plan=pocketfft_make_plan_r(nph);
   if (nph!=(int)self->length)
     {
-    if (self->plan) pocketfft_delete_plan_r(self->plan);
-    self->plan=pocketfft_make_plan_r(nph);
+    if (self->plan) delete self->plan;
+    self->plan=new mr::detail_fft::rfftp<double>(nph);
     self->length=nph;
     }
   }
@@ -332,7 +333,7 @@ MRUTIL_NOINLINE static void ringhelper_phase2ring (ringhelper *self,
       }
     }
   data[1]=data[0];
-  pocketfft_backward_r (self->plan, &(data[1]), 1.);
+  self->plan->exec(&(data[1]), 1., false);
   }
 
 MRUTIL_NOINLINE static void ringhelper_ring2phase (ringhelper *self,
@@ -351,7 +352,7 @@ MRUTIL_NOINLINE static void ringhelper_ring2phase (ringhelper *self,
   if (flags&SHARP_REAL_HARMONICS)
     wgt *= sqrt_two;
 
-  pocketfft_forward_r (self->plan, &(data[1]), 1.);
+  self->plan->exec (&(data[1]), 1., true);
   data[0]=data[1];
   data[1]=data[nph+1]=0.;
 

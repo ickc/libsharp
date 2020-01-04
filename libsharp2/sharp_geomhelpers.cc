@@ -29,7 +29,7 @@
 #include "libsharp2/sharp_geomhelpers.h"
 #include "libsharp2/sharp_legendre_roots.h"
 #include "libsharp2/sharp_utils.h"
-#include "libsharp2/pocketfft.h"
+#include "mr_util/fft.h"
 
 void sharp_make_subset_healpix_geom_info (int nside, int stride, int nrings,
   const int *rings, const double *weight, sharp_geom_info **geom_info)
@@ -155,9 +155,7 @@ void sharp_make_fejer1_geom_info (int nrings, int ppring, double phi0,
     weight[2*k  ]=2./(1.-4.*k*k)*sin((k*pi)/nrings);
     }
   if ((nrings&1)==0) weight[nrings-1]=0.;
-  pocketfft_plan_r plan = pocketfft_make_plan_r(nrings);
-  pocketfft_backward_r(plan,weight,1.);
-  pocketfft_delete_plan_r(plan);
+  mr::r2r_fftpack({size_t(nrings)}, {sizeof(double)}, {sizeof(double)}, {0}, false, false, weight, weight, 1.);
 
   for (int m=0; m<(nrings+1)/2; ++m)
     {
@@ -202,9 +200,7 @@ void sharp_make_cc_geom_info (int nrings, int ppring, double phi0,
   for (int k=1; k<=(n/2-1); ++k)
     weight[2*k-1]=2./(1.-4.*k*k) + dw;
   weight[2*(n/2)-1]=(n-3.)/(2*(n/2)-1) -1. -dw*((2-(n&1))*n-1);
-  pocketfft_plan_r plan = pocketfft_make_plan_r(n);
-  pocketfft_backward_r(plan,weight,1.);
-  pocketfft_delete_plan_r(plan);
+  mr::r2r_fftpack({size_t(n)}, {sizeof(double)}, {sizeof(double)}, {0}, false, false, weight, weight, 1.);
   weight[n]=weight[0];
 
   for (int m=0; m<(nrings+1)/2; ++m)
@@ -250,9 +246,7 @@ void sharp_make_fejer2_geom_info (int nrings, int ppring, double phi0,
   for (int k=1; k<=(n/2-1); ++k)
     weight[2*k-1]=2./(1.-4.*k*k);
   weight[2*(n/2)-1]=(n-3.)/(2*(n/2)-1) -1.;
-  pocketfft_plan_r plan = pocketfft_make_plan_r(n);
-  pocketfft_backward_r(plan,weight,1.);
-  pocketfft_delete_plan_r(plan);
+  mr::r2r_fftpack({size_t(n)}, {sizeof(double)}, {sizeof(double)}, {0}, false, false, weight, weight, 1.);
   for (int m=0; m<nrings; ++m)
     weight[m]=weight[m+1];
 

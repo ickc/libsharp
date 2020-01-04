@@ -3,8 +3,6 @@ ACLOCAL_AMFLAGS = -I m4
 lib_LTLIBRARIES = libsharp2.la
 
 libsharp2_la_SOURCES = \
-  libsharp2/pocketfft.cc \
-  libsharp2/pocketfft.h \
   libsharp2/sharp_utils.cc \
   libsharp2/sharp_utils.h \
   libsharp2/sharp.cc \
