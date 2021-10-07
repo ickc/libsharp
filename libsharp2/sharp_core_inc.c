@@ -94,6 +94,7 @@ typedef union
   sxdata_s s;
   } sxdata_u;
 
+#if 0
 static inline void Tvnormalize (Tv * restrict val, Tv * restrict scale,
   double maxval)
   {
@@ -114,6 +115,31 @@ static inline void Tvnormalize (Tv * restrict val, Tv * restrict scale,
     mask = vand_mask(vlt(vabs(*val),vfmin),vne(*val,vzero));
     }
   }
+#else
+static inline void Tvnormalize (Tv * restrict val_, Tv * restrict scale_,
+  double maxval)
+  {
+  Tv val=*val_, scale=*scale_;
+  const Tv vfmin=vload(sharp_fsmall*maxval), vfmax=vload(maxval);
+  const Tv vfsmall=vload(sharp_fsmall), vfbig=vload(sharp_fbig);
+  Tm mask = vgt(vabs(val),vfmax);
+  while (vanyTrue(mask))
+    {
+    vmuleq_mask(mask,val,vfsmall);
+    vaddeq_mask(mask,scale,vone);
+    mask = vgt(vabs(val),vfmax);
+    }
+  mask = vand_mask(vlt(vabs(val),vfmin),vne(val,vzero));
+  while (vanyTrue(mask))
+    {
+    vmuleq_mask(mask,val,vfbig);
+    vsubeq_mask(mask,scale,vone);
+    mask = vand_mask(vlt(vabs(val),vfmin),vne(val,vzero));
+    }
+  *val_ = val;
+  *scale_ = scale;
+  }
+#endif
 
 static void mypow(Tv val, int npow, const double * restrict powlimit,
   Tv * restrict resd, Tv * restrict ress)
