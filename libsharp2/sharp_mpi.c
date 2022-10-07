@@ -138,6 +138,17 @@ static void sharp_destroy_mpi_info (sharp_mpi_info *minfo)
   DEALLOC(minfo->mapdisp);
   }
 
+static void measure_drift(const sharp_mpi_info *minfo, const char *msg)
+  {
+  double time = MPI_Wtime();
+  MPI_Barrier(minfo->comm);
+  double time2 = MPI_Wtime();
+  double timered;
+  MPI_Reduce(&time,&timered,1,MPI_DOUBLE,MPI_MIN,0,minfo->comm);
+  if (minfo->mytask==0)
+    printf("drift at %s: %e\n", msg, time2-timered);
+  }
+ 
 static void sharp_communicate_alm2map (const sharp_mpi_info *minfo, dcmplx **ph)
   {
 printf("task %d arrived at %e\n", minfo->mytask, MPI_Wtime());
@@ -284,8 +295,10 @@ static void sharp_execute_job_mpi (sharp_job *job, MPI_Comm comm)
     }
   else
     {
+measure_drift(&minfo,"start");
     int lmax = job->ainfo->lmax;
     job->norm_l = sharp_Ylmgen_get_norm (lmax, job->spin);
+measure_drift(&minfo,"after get_norm");
 
     /* clear output arrays if requested */
     init_output (job);
