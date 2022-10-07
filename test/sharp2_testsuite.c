@@ -616,7 +616,7 @@ static void sharp_test (int argc, const char **argv)
     if (ta2m2<t_a2m) t_a2m=ta2m2;
     if (tm2a2<t_m2a) t_m2a=tm2a2;
     t_acc+=t_a2m+t_m2a;
-    if (t_acc>2.)
+    if ((t_acc>20.)&&(nrpt>1))
       {
       if (mytask==0) printf("Best of %d runs\n",nrpt);
       break;

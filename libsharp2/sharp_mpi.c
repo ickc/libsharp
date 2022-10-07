@@ -26,7 +26,7 @@
  */
 
 #ifdef USE_MPI
-
+#include <stdio.h>
 #include "libsharp2/sharp_mpi.h"
 
 typedef struct
@@ -140,6 +140,10 @@ static void sharp_destroy_mpi_info (sharp_mpi_info *minfo)
 
 static void sharp_communicate_alm2map (const sharp_mpi_info *minfo, dcmplx **ph)
   {
+printf("task %d arrived at %e\n", minfo->mytask, MPI_Wtime());
+MPI_Barrier(minfo->comm);
+double time=MPI_Wtime();
+
   // on input: ph has shape(npairtotal,nm[task],nph)
   dcmplx *sendbuf = RALLOC(dcmplx,minfo->nmmax*minfo->ntasks*minfo->npairmax*minfo->nph);
   for (int task=0; task<minfo->ntasks; ++task)
@@ -173,6 +177,9 @@ static void sharp_communicate_alm2map (const sharp_mpi_info *minfo, dcmplx **ph)
           (*ph)[oarr+i] = recvbuf[obuf+i];
         }
   DEALLOC(recvbuf);
+MPI_Barrier(minfo->comm);
+if (minfo->mytask==0) printf("time for alm2map communication: %e\n", MPI_Wtime()-time);
+
   }
 
 static void sharp_communicate_map2alm (const sharp_mpi_info *minfo, dcmplx **ph)
@@ -251,7 +258,7 @@ static void sharp_execute_job_mpi (sharp_job *job, MPI_Comm comm)
   sharp_mpi_info minfo;
   sharp_make_mpi_info(comm, job, &minfo);
 
-  if (minfo.npairtotal>minfo.ntasks*300)
+  if (minfo.npairtotal>minfo.ntasks*300000)
     {
     int nsub=(minfo.npairtotal+minfo.ntasks*200-1)/(minfo.ntasks*200);
     for (int isub=0; isub<nsub; ++isub)
